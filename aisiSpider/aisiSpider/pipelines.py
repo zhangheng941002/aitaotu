@@ -8,6 +8,9 @@ import json
 import requests
 from lxml import etree
 import os
+from aisiSpider.settings import USER_AGENT
+
+
 class AisispiderPipeline(object):
     def process_item(self, item, spider):
 
@@ -21,7 +24,7 @@ class AisispiderPipeline(object):
         # print(img_load)
         # 进入分析，获得共几页，和每张图片的url
         session = requests.session()
-        res = session.get(img_load).text
+        res = session.get(img_load, headers=USER_AGENT).text
         html = etree.HTML(res)
         # 分析获取一共有几页
         page = html.xpath('//div[@class="pages"]//li[last()]/a/@href')[0]  # /guonei/35314_23.html
@@ -29,34 +32,32 @@ class AisispiderPipeline(object):
         # 进行截取，取出最后一页的数字
         num = os.path.splitext(page)[0].split('_')[-1]
         # 重新编写URL 每组套图的每一页的URL
-        for page in range(1,int(num)+1):
+        for page in range(1, int(num) + 1):
             url_f = os.path.splitext(img_load)
             url_fin = url_f[0] + "_" + str(page) + url_f[1]
             # 重新进行发送，请求数据，这里是每一页的数据，分析找出每张图片的src 属性
-            res1 = session.get(url_fin).text
+            res1 = session.get(url_fin, headers=USER_AGENT).text
             html1 = etree.HTML(res1)
             # 这里找到的是一个列表，下载需要循环
             # 图片的下载地址
             img_src = html1.xpath('//div[@id="big-pic"]//a/img/@src')
             # 图片的名字
             img_fin_name = html1.xpath('//div[@id="big-pic"]//a/img/@alt')
-            print(img_src,img_fin_name)
+            print(img_src, img_fin_name)
 
             # 创建下载路径，每个标签为一个文件夹，在该文件夹下每组套图为一个文件夹
-            path = 'F:\五层链接爬出图片/' + item['title'] + "/" + item['img_name']
+            path = './images/' + item['title'] + "/" + item['img_name']
             if not os.path.exists(path):
                 os.makedirs(path)
-            # print(path)
+
             # 进行下载
-            for src,name in zip(img_src,img_fin_name):
-                resp = session.get(src).content
+            for src, name in zip(img_src, img_fin_name):
+                resp = session.get(src, headers=USER_AGENT).content
                 # 获取图片的后缀
                 hz = os.path.splitext(src)[1]
 
-                file = open(path+'/'+name+ hz, 'wb')
+                file = open(path + '/' + name + hz, 'wb')
                 file.write(resp)
                 file.close()
-
-
 
         return item

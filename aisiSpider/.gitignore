@@ -1,0 +1,5 @@
+*.pyc
+images/*
+*/mm.json
+*.log
+*/.idea/*
